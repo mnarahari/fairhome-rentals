@@ -5,8 +5,14 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const { initGoogleCalendar, addReservationToCalendar, updateCalendarEvent, deleteCalendarEvent } = require('./googleCalendar');
 
-// Initialize Stripe
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Initialize Stripe (optional - only if keys are configured)
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    console.log('✅ Stripe initialized');
+} else {
+    console.log('⚠️  Stripe: Secret key not configured. Payment processing disabled.');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -279,6 +285,9 @@ app.get('/api/reservations/dates/:listing_id', async (req, res) => {
 
 // Get Stripe publishable key (for frontend)
 app.get('/api/stripe/config', (req, res) => {
+    if (!stripe) {
+        return res.status(503).json({ error: 'Stripe not configured' });
+    }
     res.json({ 
         publishableKey: process.env.STRIPE_PUBLISHABLE_KEY 
     });
@@ -287,6 +296,10 @@ app.get('/api/stripe/config', (req, res) => {
 // Create Payment Intent
 app.post('/api/create-payment-intent', async (req, res) => {
     try {
+        if (!stripe) {
+            return res.status(503).json({ error: 'Stripe payment processing not available' });
+        }
+
         const { 
             amount, 
             currency = 'usd',
@@ -344,20 +357,35 @@ app.post('/api/reservations/with-payment', async (req, res) => {
         } = req.body;
 
         // Validate required fields
-        if (!guest_name || !guest_email || !check_in || !check_out || !payment_intent_id) {
+        if (!guest_name || !guest_email || !check_in || !check_out) {
             return res.status(400).json({ 
-                error: 'Missing required fields' 
+                error: 'Missing required fields: guest_name, guest_email, check_in, check_out' 
             });
         }
 
-        // Verify the payment was successful with Stripe
-        const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
-        
-        if (paymentIntent.status !== 'succeeded') {
-            return res.status(400).json({ 
-                error: 'Payment not completed',
-                payment_status: paymentIntent.status
-            });
+        // Verify payment if Stripe is configured and payment_intent_id provided
+        let paymentIntent = null;
+        let paymentMethodType = 'none';
+        if (stripe && payment_intent_id) {
+            try {
+                paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
+                
+                if (paymentIntent.status !== 'succeeded') {
+                    return res.status(400).json({ 
+                        error: 'Payment not completed',
+                        payment_status: paymentIntent.status
+                    });
+                }
+
+                // Get payment method details
+                if (paymentIntent.payment_method) {
+                    const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntent.payment_method);
+                    paymentMethodType = paymentMethod.type;
+                }
+            } catch (error) {
+                console.error('Stripe payment verification error:', error.message);
+                return res.status(400).json({ error: 'Payment verification failed' });
+            }
         }
 
         // Check for conflicting reservations
@@ -371,23 +399,22 @@ app.post('/api/reservations/with-payment', async (req, res) => {
         `, [listing_id || 49599459, check_in, check_in, check_out, check_out, check_in, check_out]);
 
         if (conflicts.length > 0) {
-            // Refund the payment if dates are no longer available
-            await stripe.refunds.create({
-                payment_intent: payment_intent_id,
-                reason: 'requested_by_customer'
-            });
+            // Refund the payment if dates are no longer available and Stripe is configured
+            if (stripe && payment_intent_id) {
+                try {
+                    await stripe.refunds.create({
+                        payment_intent: payment_intent_id,
+                        reason: 'requested_by_customer'
+                    });
+                } catch (error) {
+                    console.error('Refund error:', error.message);
+                }
+            }
             
             return res.status(409).json({ 
-                error: 'These dates are already booked. Your payment has been refunded.',
+                error: 'These dates are already booked' + (stripe && payment_intent_id ? '. Your payment has been refunded.' : '.'),
                 conflicts 
             });
-        }
-
-        // Get payment method details
-        let paymentMethodType = 'card';
-        if (paymentIntent.payment_method) {
-            const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntent.payment_method);
-            paymentMethodType = paymentMethod.type;
         }
 
         // Insert new reservation with payment info
@@ -445,6 +472,10 @@ app.post('/api/reservations/with-payment', async (req, res) => {
 // Refund a reservation
 app.post('/api/reservations/:id/refund', async (req, res) => {
     try {
+        if (!stripe) {
+            return res.status(503).json({ error: 'Stripe payment processing not available' });
+        }
+
         const reservation = await dbGet('SELECT * FROM reservations WHERE id = ?', [req.params.id]);
         
         if (!reservation) {
