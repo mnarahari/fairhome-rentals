@@ -1,0 +1,47 @@
+{
+  "reservations": [
+    {
+      "id": 1,
+      "listing_id": 49599459,
+      "guest_name": "Anu Narahari",
+      "guest_email": "anu.narahari@gmailcom",
+      "guest_phone": "5033323903",
+      "check_in": "2026-01-23",
+      "check_out": "2026-01-25",
+      "adults": 10,
+      "children": 0,
+      "infants": 0,
+      "pets": 0,
+      "nightly_rate": 350,
+      "cleaning_fee": 199,
+      "service_fee": 84,
+      "total_price": 983,
+      "num_nights": 2,
+      "special_requests": "early check-im\n",
+      "status": "pending",
+      "created_at": "2026-01-17T23:58:01.166Z"
+    },
+    {
+      "id": 2,
+      "listing_id": 49599459,
+      "guest_name": "Mue Jetdn",
+      "guest_email": "test@test.com",
+      "guest_phone": "5033323903",
+      "check_in": "2026-01-29",
+      "check_out": "2026-01-30",
+      "adults": 1,
+      "children": 0,
+      "infants": 0,
+      "pets": 0,
+      "nightly_rate": 350,
+      "cleaning_fee": 199,
+      "service_fee": 42,
+      "total_price": 591,
+      "num_nights": 1,
+      "special_requests": null,
+      "status": "pending",
+      "created_at": "2026-01-18T00:03:04.024Z"
+    }
+  ],
+  "nextId": 3
+}

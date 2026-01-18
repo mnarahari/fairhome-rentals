@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Nine - Oregon Coast Beach House | Depoe Bay Vacation Rental</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="container">
+                <div class="nav-content">
+                    <a href="index.html" class="logo">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 6C12 6 8 10 8 14C8 18 12 22 16 26C20 22 24 18 24 14C24 10 20 6 16 6ZM16 17C14.34 17 13 15.66 13 14C13 12.34 14.34 11 16 11C17.66 11 19 12.34 19 14C19 15.66 17.66 17 16 17Z" fill="#0EA5E9"/>
+                            <path d="M6 8C4 10 3 12 3 14C3 18 6 22 6 22" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M26 8C28 10 29 12 29 14C29 18 26 22 26 22" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <span>Cloud Nine</span>
+                    </a>
+                    <div class="nav-links">
+                        <a href="admin.html" class="admin-link">Admin</a>
+                        <a href="https://www.airbnb.com/rooms/49599459" target="_blank" class="book-btn-header">Book on Airbnb</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="detail-page">
+        <div class="container">
+            <!-- Title Section -->
+            <div class="detail-header">
+                <h1 id="listingTitle">Cloud Nine - A Charming Ocean View Home with Hot Tub</h1>
+                <div class="detail-meta">
+                    <span class="rating-badge">★ <span id="listingRating">4.89</span></span>
+                    <span class="reviews-count"><span id="reviewCount">129</span> reviews</span>
+                    <span class="superhost-badge" id="superhostBadge">☆ Superhost</span>
+                    <span class="location-text" id="listingLocation">Belle Beach, Depoe Bay, Oregon</span>
+                </div>
+            </div>
+
+            <!-- Image Gallery -->
+            <div class="image-gallery">
+                <div class="gallery-main">
+                    <img src="" alt="Main property image" id="mainImage" class="gallery-main-img">
+                </div>
+                <div class="gallery-grid">
+                    <img src="" alt="Property image 2" class="gallery-thumb" data-index="1">
+                    <img src="" alt="Property image 3" class="gallery-thumb" data-index="2">
+                    <img src="" alt="Property image 4" class="gallery-thumb" data-index="3">
+                    <img src="" alt="Property image 5" class="gallery-thumb" data-index="4">
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="detail-content">
+                <div class="detail-main">
+                    <!-- Host Info -->
+                    <div class="host-section">
+                        <div class="host-info">
+                            <h2>Entire home hosted by <span id="hostName">Cloud9</span></h2>
+                            <p id="propertyStats">10 guests · 4 bedrooms · 5 beds · 3 baths</p>
+                        </div>
+                        <div class="host-avatar">
+                            <div class="avatar-circle">C9</div>
+                        </div>
+                    </div>
+
+                    <!-- Highlights -->
+                    <div class="highlights-section">
+                        <div class="highlight-item">
+                            <div class="highlight-icon">🏖️</div>
+                            <div class="highlight-text">
+                                <strong>Beach access</strong>
+                                <span>Just a minute walk from the beach</span>
+                            </div>
+                        </div>
+                        <div class="highlight-item">
+                            <div class="highlight-icon">🐋</div>
+                            <div class="highlight-text">
+                                <strong>Whale watching</strong>
+                                <span>Watch whales from your balcony</span>
+                            </div>
+                        </div>
+                        <div class="highlight-item">
+                            <div class="highlight-icon">🌅</div>
+                            <div class="highlight-text">
+                                <strong>Ocean views</strong>
+                                <span>Breathtaking sunsets every evening</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- About Section -->
+                    <div class="about-section">
+                        <h3>About this space</h3>
+                        <p id="aboutSpace">The Cloud Nine beach house lives up to its name. It is perfect for everyone and offers a variety of activities and amenities to ensure all guests enjoy their stay.</p>
+                        
+                        <h4>The space</h4>
+                        <p id="theSpace">A day at Cloud Nine would start with waking up to the sound of crashing waves and drinking your morning coffee on the balcony while watching whales swim by.</p>
+                    </div>
+
+                    <!-- Amenities -->
+                    <div class="amenities-section">
+                        <h3>What this place offers</h3>
+                        <div class="amenities-grid" id="amenitiesGrid">
+                            <!-- Amenities will be populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- House Rules -->
+                    <div class="rules-section">
+                        <h3>House rules</h3>
+                        <ul class="rules-list" id="rulesList">
+                            <!-- Rules will be populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Booking Card -->
+                <div class="detail-sidebar">
+                    <div class="booking-card">
+                        <div class="price-row">
+                            <span class="price-amount">$<span id="priceAmount">350</span></span>
+                            <span class="price-period">night</span>
+                        </div>
+                        <div class="rating-row">
+                            <span>★ <span id="cardRating">4.89</span></span>
+                            <span class="dot">·</span>
+                            <span><span id="cardReviews">129</span> reviews</span>
+                        </div>
+                        
+                        <!-- Date Selection -->
+                        <div class="date-selection">
+                            <div class="date-inputs">
+                                <div class="date-input-group" id="checkinGroup">
+                                    <label>CHECK-IN</label>
+                                    <input type="text" id="checkinDate" placeholder="Add date" readonly>
+                                </div>
+                                <div class="date-input-group" id="checkoutGroup">
+                                    <label>CHECKOUT</label>
+                                    <input type="text" id="checkoutDate" placeholder="Add date" readonly>
+                                </div>
+                            </div>
+                            
+                            <!-- Calendar -->
+                            <div class="calendar-container" id="calendarContainer">
+                                <div class="calendar-header">
+                                    <button class="calendar-nav" id="prevMonth">‹</button>
+                                    <span class="calendar-month" id="calendarMonth">January 2026</span>
+                                    <button class="calendar-nav" id="nextMonth">›</button>
+                                </div>
+                                <div class="calendar-weekdays">
+                                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                                </div>
+                                <div class="calendar-days" id="calendarDays">
+                                    <!-- Days will be populated by JS -->
+                                </div>
+                                <div class="calendar-actions">
+                                    <button class="clear-dates-btn" id="clearDates">Clear dates</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Guest Selection -->
+                        <div class="guest-selection">
+                            <div class="guest-input" id="guestInput">
+                                <label>GUESTS</label>
+                                <div class="guest-display">
+                                    <span id="guestCount">1 guest</span>
+                                    <span class="dropdown-arrow">▼</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Guest Dropdown -->
+                            <div class="guest-dropdown" id="guestDropdown">
+                                <div class="guest-row">
+                                    <div class="guest-type">
+                                        <strong>Adults</strong>
+                                        <span>Age 13+</span>
+                                    </div>
+                                    <div class="guest-controls">
+                                        <button class="guest-btn" data-type="adults" data-action="decrease">−</button>
+                                        <span id="adultCount">1</span>
+                                        <button class="guest-btn" data-type="adults" data-action="increase">+</button>
+                                    </div>
+                                </div>
+                                <div class="guest-row">
+                                    <div class="guest-type">
+                                        <strong>Children</strong>
+                                        <span>Ages 2-12</span>
+                                    </div>
+                                    <div class="guest-controls">
+                                        <button class="guest-btn" data-type="children" data-action="decrease">−</button>
+                                        <span id="childCount">0</span>
+                                        <button class="guest-btn" data-type="children" data-action="increase">+</button>
+                                    </div>
+                                </div>
+                                <div class="guest-row">
+                                    <div class="guest-type">
+                                        <strong>Infants</strong>
+                                        <span>Under 2</span>
+                                    </div>
+                                    <div class="guest-controls">
+                                        <button class="guest-btn" data-type="infants" data-action="decrease">−</button>
+                                        <span id="infantCount">0</span>
+                                        <button class="guest-btn" data-type="infants" data-action="increase">+</button>
+                                    </div>
+                                </div>
+                                <div class="guest-row">
+                                    <div class="guest-type">
+                                        <strong>Pets</strong>
+                                        <span>Max 2 dogs</span>
+                                    </div>
+                                    <div class="guest-controls">
+                                        <button class="guest-btn" data-type="pets" data-action="decrease">−</button>
+                                        <span id="petCount">0</span>
+                                        <button class="guest-btn" data-type="pets" data-action="increase">+</button>
+                                    </div>
+                                </div>
+                                <p class="guest-note">This place has a maximum of 10 guests, not including infants.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Reserve Button -->
+                        <button class="book-btn" id="reserveBtn" disabled>
+                            Check availability
+                        </button>
+                        <p class="book-note">You won't be charged yet</p>
+                        
+                        <!-- Price Breakdown (shown after dates selected) -->
+                        <div class="price-breakdown" id="priceBreakdown" style="display: none;">
+                            <div class="price-line">
+                                <span>$<span id="nightlyRate">350</span> x <span id="numNights">0</span> nights</span>
+                                <span>$<span id="subtotal">0</span></span>
+                            </div>
+                            <div class="price-line">
+                                <span>Cleaning fee</span>
+                                <span>$199</span>
+                            </div>
+                            <div class="price-line">
+                                <span>Service fee</span>
+                                <span>$<span id="serviceFee">0</span></span>
+                            </div>
+                            <div class="price-total">
+                                <span>Total before taxes</span>
+                                <span>$<span id="totalPrice">0</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>About</h3>
+                    <ul>
+                        <li><a href="#">How it works</a></li>
+                        <li><a href="#">Contact us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <ul>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Cancellation options</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Book Now</h3>
+                    <ul>
+                        <li><a href="https://www.airbnb.com/rooms/49599459" target="_blank">View on Airbnb</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Cloud Nine Beach House. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Reservation Modal -->
+    <div class="modal-overlay" id="reservationModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeModal">&times;</button>
+            <h2>Complete Your Reservation</h2>
+            <div class="reservation-summary" id="reservationSummary">
+                <!-- Will be populated by JS -->
+            </div>
+            <form id="reservationForm">
+                <div class="form-group">
+                    <label for="guestName">Full Name *</label>
+                    <input type="text" id="guestName" name="guestName" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="guestEmail">Email Address *</label>
+                    <input type="email" id="guestEmail" name="guestEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="guestPhone">Phone Number</label>
+                    <input type="tel" id="guestPhone" name="guestPhone" placeholder="+1 (555) 000-0000">
+                </div>
+                <div class="form-group">
+                    <label for="specialRequests">Special Requests</label>
+                    <textarea id="specialRequests" name="specialRequests" rows="3" placeholder="Any special requests or notes for your stay..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn" id="submitReservation">
+                    Confirm Reservation
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="confirmationModal">
+        <div class="modal-content confirmation">
+            <div class="confirmation-icon">✓</div>
+            <h2>Reservation Confirmed!</h2>
+            <p class="confirmation-id">Confirmation #<span id="confirmationId"></span></p>
+            <div class="confirmation-details" id="confirmationDetails">
+                <!-- Will be populated by JS -->
+            </div>
+            <p class="confirmation-note">A confirmation email will be sent to your email address.</p>
+            <button class="submit-btn" id="closeConfirmation">Done</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="detail.js"></script>
+</body>
+</html>
+
