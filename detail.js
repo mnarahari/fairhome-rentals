@@ -500,7 +500,7 @@ let calculatedPrices = {
     nightlyRate: 0,
     subtotal: 0,
     cleaningFee: 199,
-    serviceFee: 0,
+    tax: 0,
     total: 0
 };
 
@@ -513,15 +513,16 @@ function updatePriceBreakdown() {
         const nightlyRate = currentListing?.price || 350;
         const subtotal = nights * nightlyRate;
         const cleaningFee = 199;
-        const serviceFee = Math.round(subtotal * 0.12);
-        const total = subtotal + cleaningFee + serviceFee;
+        const taxableAmount = subtotal + cleaningFee;
+        const tax = Math.round(taxableAmount * 0.135 * 100) / 100; // 13.5% tax
+        const total = taxableAmount + tax;
         
         // Store for later use
-        calculatedPrices = { nights, nightlyRate, subtotal, cleaningFee, serviceFee, total };
+        calculatedPrices = { nights, nightlyRate, subtotal, cleaningFee, tax, total };
         
         document.getElementById('numNights').textContent = nights;
         document.getElementById('subtotal').textContent = subtotal.toLocaleString();
-        document.getElementById('serviceFee').textContent = serviceFee.toLocaleString();
+        document.getElementById('tax').textContent = tax.toLocaleString();
         document.getElementById('totalPrice').textContent = total.toLocaleString();
         
         priceBreakdown.style.display = 'block';
@@ -673,8 +674,8 @@ function openReservationModal() {
             <span>$${calculatedPrices.cleaningFee}</span>
         </div>
         <div class="summary-row">
-            <span>Service fee</span>
-            <span>$${calculatedPrices.serviceFee.toLocaleString()}</span>
+            <span>Tax (13.5%)</span>
+            <span>$${calculatedPrices.tax.toLocaleString()}</span>
         </div>
         <div class="summary-row total-row">
             <span>Total</span>
@@ -748,7 +749,8 @@ async function submitReservation(e) {
         pets: guests.pets,
         nightly_rate: calculatedPrices.nightlyRate,
         cleaning_fee: calculatedPrices.cleaningFee,
-        service_fee: calculatedPrices.serviceFee,
+        service_fee: 0,
+        tax: calculatedPrices.tax,
         total_price: calculatedPrices.total,
         num_nights: calculatedPrices.nights,
         special_requests: document.getElementById('specialRequests').value

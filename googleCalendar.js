@@ -56,8 +56,12 @@ Phone: ${reservation.guest_phone || 'Not provided'}
 Guests: ${reservation.adults} adults, ${reservation.children} children, ${reservation.infants} infants
 Pets: ${reservation.pets}
 
-Total: $${reservation.total_price}
-Nights: ${reservation.num_nights}
+Pricing:
+- Nightly Rate: $${reservation.nightly_rate} x ${reservation.num_nights} nights
+- Cleaning Fee: $${reservation.cleaning_fee}
+- Service Fee: $${reservation.service_fee || 0}
+- Tax (13.5%): $${reservation.tax || 0}
+- Total: $${reservation.total_price}
 
 Special Requests: ${reservation.special_requests || 'None'}
 

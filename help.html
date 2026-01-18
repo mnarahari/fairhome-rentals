@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help Center - Cloud Nine Beach House</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .help-page {
+            padding: 48px 0;
+            background: var(--background);
+            min-height: calc(100vh - 200px);
+        }
+
+        .help-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .help-header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .help-header p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .contact-card {
+            background: var(--background);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .contact-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .contact-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary-color), #38BDF8);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 28px;
+        }
+
+        .contact-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .contact-card p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .contact-card a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: color 0.2s;
+        }
+
+        .contact-card a:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        .faq-section {
+            background: #F8FAFC;
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 48px;
+        }
+
+        .faq-section h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .faq-list {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: var(--background);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .faq-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .faq-item h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .faq-item p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .property-info {
+            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+            border: 1px solid #BAE6FD;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .property-info h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .property-address {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .back-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .help-header h1 {
+                font-size: 28px;
+            }
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .faq-section {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="container">
+                <div class="nav-content">
+                    <a href="index.html" class="logo">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 6C12 6 8 10 8 14C8 18 12 22 16 26C20 22 24 18 24 14C24 10 20 6 16 6ZM16 17C14.34 17 13 15.66 13 14C13 12.34 14.34 11 16 11C17.66 11 19 12.34 19 14C19 15.66 17.66 17 16 17Z" fill="#0EA5E9"/>
+                            <path d="M6 8C4 10 3 12 3 14C3 18 6 22 6 22" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M26 8C28 10 29 12 29 14C29 18 26 22 26 22" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <span>Cloud Nine</span>
+                    </a>
+                    <div class="nav-menu">
+                        <a href="index.html" class="nav-link">Home</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="help-page">
+        <div class="container">
+            <div class="help-header">
+                <h1>Help Center</h1>
+                <p>Have questions about your stay at Cloud Nine? We're here to help make your Oregon Coast getaway perfect.</p>
+            </div>
+
+            <!-- Contact Cards -->
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <div class="contact-icon">📧</div>
+                    <h3>Email Us</h3>
+                    <p>For booking inquiries, questions, or special requests, send us an email and we'll respond within 24 hours.</p>
+                    <a href="mailto:OregonCloud9@gmail.com">OregonCloud9@gmail.com</a>
+                </div>
+
+                <div class="contact-card">
+                    <div class="contact-icon">📱</div>
+                    <h3>Call or Text</h3>
+                    <p>Need immediate assistance? Give us a call or send a text message for quick support.</p>
+                    <a href="tel:+15414180661">(541) 418-0661</a>
+                </div>
+
+                <div class="contact-card">
+                    <div class="contact-icon">🏠</div>
+                    <h3>Airbnb</h3>
+                    <p>You can also reach us through our Airbnb listing for booking-related questions.</p>
+                    <a href="https://www.airbnb.com/rooms/49599459" target="_blank">View on Airbnb</a>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="faq-section">
+                <h2>Frequently Asked Questions</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <h4>What time is check-in and check-out?</h4>
+                        <p>Check-in is at 4:00 PM and check-out is at 11:00 AM. Early check-in or late check-out may be available upon request, depending on availability.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Is the property pet-friendly?</h4>
+                        <p>Yes! We welcome well-behaved pets. Please let us know in advance if you're bringing a furry friend, and note that a pet fee may apply.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>What amenities are included?</h4>
+                        <p>Cloud Nine features a fully equipped kitchen, WiFi, smart TV, washer/dryer, ocean views, beach access, and outdoor seating areas. Check the listing for a complete list.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>What is the cancellation policy?</h4>
+                        <p>We offer flexible cancellation options. Please review the cancellation policy on our booking page or contact us directly for specific details about your reservation.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>How do I get directions to the property?</h4>
+                        <p>Detailed directions and access instructions will be sent to you after your booking is confirmed, typically 24-48 hours before your check-in date.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property Info -->
+            <div class="property-info">
+                <h3>Cloud Nine Beach House</h3>
+                <p class="property-address">📍 Depoe Bay, Oregon Coast</p>
+                <a href="detail.html" class="back-btn">
+                    <span>←</span> View Property & Book Now
+                </a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

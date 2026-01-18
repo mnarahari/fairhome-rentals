@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 const { initGoogleCalendar, addReservationToCalendar, updateCalendarEvent, deleteCalendarEvent } = require('./googleCalendar');
 
 // Initialize Stripe (optional - only if keys are configured)
@@ -26,9 +28,46 @@ const PORT = process.env.PORT || 3000;
 // Initialize Google Calendar (optional - works without it)
 initGoogleCalendar();
 
+// Admin credentials from environment variables
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(express.json());
+
+// Session configuration
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'cloud-nine-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
+// Auth middleware - protects admin routes
+const requireAdmin = (req, res, next) => {
+    if (req.session && req.session.isAdmin) {
+        return next();
+    }
+    return res.status(401).json({ error: 'Unauthorized. Please login.' });
+};
+
+// Protect admin.html - redirect to login if not authenticated
+app.get('/admin.html', (req, res, next) => {
+    if (req.session && req.session.isAdmin) {
+        return next();
+    }
+    return res.redirect('/admin-login.html');
+});
+
+// Serve static files after auth check
 app.use(express.static('.'));
 
 // Initialize SQLite Database
@@ -52,7 +91,8 @@ db.serialize(() => {
             pets INTEGER DEFAULT 0,
             nightly_rate REAL NOT NULL,
             cleaning_fee REAL DEFAULT 199,
-            service_fee REAL NOT NULL,
+            service_fee REAL DEFAULT 0,
+            tax REAL DEFAULT 0,
             total_price REAL NOT NULL,
             num_nights INTEGER NOT NULL,
             special_requests TEXT,
@@ -73,6 +113,10 @@ db.serialize(() => {
         if (err && !err.message.includes('duplicate column')) console.error(err);
     });
     db.run(`ALTER TABLE reservations ADD COLUMN payment_method TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.error(err);
+    });
+    // Add tax column if it doesn't exist (for existing databases)
+    db.run(`ALTER TABLE reservations ADD COLUMN tax REAL DEFAULT 0`, (err) => {
         if (err && !err.message.includes('duplicate column')) console.error(err);
     });
     
@@ -108,11 +152,82 @@ const dbGet = (sql, params = []) => {
 };
 
 // =============================================
+// ADMIN AUTH ROUTES
+// =============================================
+
+// Admin login
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password required' });
+        }
+
+        // Check username
+        if (username !== ADMIN_USERNAME) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Check password
+        let isValidPassword = false;
+        
+        if (ADMIN_PASSWORD_HASH) {
+            // Compare with stored hash
+            isValidPassword = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+        } else {
+            // Fallback: if no hash is set, use default password (for initial setup only)
+            // IMPORTANT: Set ADMIN_PASSWORD_HASH in production!
+            const defaultPassword = process.env.ADMIN_PASSWORD || 'CloudNine2024!';
+            isValidPassword = password === defaultPassword;
+            if (isValidPassword) {
+                console.log('⚠️  Using default admin password. Please set ADMIN_PASSWORD_HASH for security.');
+            }
+        }
+
+        if (!isValidPassword) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Set session
+        req.session.isAdmin = true;
+        req.session.username = username;
+        
+        console.log(`✅ Admin logged in: ${username}`);
+        res.json({ message: 'Login successful', username });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// Admin logout
+app.post('/api/admin/logout', (req, res) => {
+    const username = req.session.username;
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Logout failed' });
+        }
+        console.log(`👋 Admin logged out: ${username}`);
+        res.json({ message: 'Logged out successfully' });
+    });
+});
+
+// Check auth status
+app.get('/api/admin/check', (req, res) => {
+    if (req.session && req.session.isAdmin) {
+        res.json({ authenticated: true, username: req.session.username });
+    } else {
+        res.json({ authenticated: false });
+    }
+});
+
+// =============================================
 // API ROUTES
 // =============================================
 
-// Get all reservations
-app.get('/api/reservations', async (req, res) => {
+// Get all reservations (protected)
+app.get('/api/reservations', requireAdmin, async (req, res) => {
     try {
         const reservations = await dbAll('SELECT * FROM reservations ORDER BY created_at DESC');
         res.json(reservations);
@@ -152,6 +267,7 @@ app.post('/api/reservations', async (req, res) => {
             nightly_rate,
             cleaning_fee,
             service_fee,
+            tax,
             total_price,
             num_nights,
             special_requests
@@ -186,9 +302,9 @@ app.post('/api/reservations', async (req, res) => {
             INSERT INTO reservations (
                 listing_id, guest_name, guest_email, guest_phone,
                 check_in, check_out, adults, children, infants, pets,
-                nightly_rate, cleaning_fee, service_fee, total_price, num_nights,
+                nightly_rate, cleaning_fee, service_fee, tax, total_price, num_nights,
                 special_requests
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             listing_id || 49599459,
             guest_name,
@@ -203,6 +319,7 @@ app.post('/api/reservations', async (req, res) => {
             nightly_rate,
             cleaning_fee || 199,
             service_fee,
+            tax || 0,
             total_price,
             num_nights,
             special_requests || null
@@ -229,8 +346,8 @@ app.post('/api/reservations', async (req, res) => {
     }
 });
 
-// Update reservation status
-app.patch('/api/reservations/:id', async (req, res) => {
+// Update reservation status (protected)
+app.patch('/api/reservations/:id', requireAdmin, async (req, res) => {
     try {
         const { status } = req.body;
         const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
@@ -254,8 +371,8 @@ app.patch('/api/reservations/:id', async (req, res) => {
     }
 });
 
-// Delete reservation
-app.delete('/api/reservations/:id', async (req, res) => {
+// Delete reservation (protected)
+app.delete('/api/reservations/:id', requireAdmin, async (req, res) => {
     try {
         const result = await dbRun('DELETE FROM reservations WHERE id = ?', [req.params.id]);
 
@@ -357,6 +474,7 @@ app.post('/api/reservations/with-payment', async (req, res) => {
             nightly_rate,
             cleaning_fee,
             service_fee,
+            tax,
             total_price,
             num_nights,
             special_requests
@@ -428,9 +546,9 @@ app.post('/api/reservations/with-payment', async (req, res) => {
             INSERT INTO reservations (
                 listing_id, guest_name, guest_email, guest_phone,
                 check_in, check_out, adults, children, infants, pets,
-                nightly_rate, cleaning_fee, service_fee, total_price, num_nights,
+                nightly_rate, cleaning_fee, service_fee, tax, total_price, num_nights,
                 special_requests, status, payment_status, payment_intent_id, payment_method
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             listing_id || 49599459,
             guest_name,
@@ -445,6 +563,7 @@ app.post('/api/reservations/with-payment', async (req, res) => {
             nightly_rate,
             cleaning_fee || 199,
             service_fee,
+            tax || 0,
             total_price,
             num_nights,
             special_requests || null,
@@ -475,8 +594,8 @@ app.post('/api/reservations/with-payment', async (req, res) => {
     }
 });
 
-// Refund a reservation
-app.post('/api/reservations/:id/refund', async (req, res) => {
+// Refund a reservation (protected)
+app.post('/api/reservations/:id/refund', requireAdmin, async (req, res) => {
     try {
         if (!stripe) {
             return res.status(503).json({ error: 'Stripe payment processing not available' });

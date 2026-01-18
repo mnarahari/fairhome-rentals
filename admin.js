@@ -7,15 +7,56 @@ let adminYear = new Date().getFullYear();
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    checkAuth();
     loadReservations();
     setupEventListeners();
     renderAdminCalendar();
 });
 
+// Check authentication status
+async function checkAuth() {
+    try {
+        const response = await fetch('/api/admin/check');
+        const data = await response.json();
+        if (!data.authenticated) {
+            window.location.href = '/admin-login.html';
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+        window.location.href = '/admin-login.html';
+    }
+}
+
+// Handle unauthorized responses
+function handleUnauthorized(response) {
+    if (response.status === 401) {
+        alert('Your session has expired. Please login again.');
+        window.location.href = '/admin-login.html';
+        return true;
+    }
+    return false;
+}
+
+// Logout function
+async function logout() {
+    try {
+        await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+    window.location.href = '/admin-login.html';
+}
+
 // Load reservations from API
 async function loadReservations() {
     try {
         const response = await fetch('/api/reservations');
+        if (handleUnauthorized(response)) return;
+        
+        if (!response.ok) {
+            throw new Error('Failed to load reservations');
+        }
+        
         reservations = await response.json();
         updateStats();
         renderReservationsTable();
@@ -133,7 +174,8 @@ function viewReservation(id) {
                 <p><strong>Nightly Rate:</strong> $${r.nightly_rate}</p>
                 <p><strong>Subtotal:</strong> $${(r.nightly_rate * r.num_nights).toLocaleString()}</p>
                 <p><strong>Cleaning Fee:</strong> $${r.cleaning_fee}</p>
-                <p><strong>Service Fee:</strong> $${r.service_fee}</p>
+                <p><strong>Service Fee:</strong> $${r.service_fee?.toLocaleString() || '0'}</p>
+                <p><strong>Tax (13.5%):</strong> $${r.tax?.toLocaleString() || '0'}</p>
                 <p class="total"><strong>Total:</strong> $${r.total_price.toLocaleString()}</p>
             </div>
             <div class="detail-section full-width">
@@ -179,6 +221,8 @@ async function updateStatus(id, status) {
             body: JSON.stringify({ status })
         });
         
+        if (handleUnauthorized(response)) return;
+        
         if (response.ok) {
             loadReservations();
         } else {
@@ -200,6 +244,8 @@ async function deleteReservation(id) {
         const response = await fetch(`/api/reservations/${id}`, {
             method: 'DELETE'
         });
+        
+        if (handleUnauthorized(response)) return;
         
         if (response.ok) {
             loadReservations();
@@ -285,6 +331,12 @@ function getBookingForDate(date) {
 
 // Setup event listeners
 function setupEventListeners() {
+    // Logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
+    
     // Filter tabs
     document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.addEventListener('click', () => {
