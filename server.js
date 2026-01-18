@@ -2,9 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
+const { initGoogleCalendar, addReservationToCalendar, updateCalendarEvent, deleteCalendarEvent } = require('./googleCalendar');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Initialize Google Calendar (optional - works without it)
+initGoogleCalendar();
 
 // Middleware
 app.use(cors());
@@ -37,6 +41,7 @@ db.serialize(() => {
             num_nights INTEGER NOT NULL,
             special_requests TEXT,
             status TEXT DEFAULT 'pending',
+            google_event_id TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
@@ -172,7 +177,14 @@ app.post('/api/reservations', async (req, res) => {
             special_requests || null
         ]);
 
-        const newReservation = await dbGet('SELECT * FROM reservations WHERE id = ?', [result.lastID]);
+        let newReservation = await dbGet('SELECT * FROM reservations WHERE id = ?', [result.lastID]);
+        
+        // Add to Google Calendar
+        const calendarEvent = await addReservationToCalendar(newReservation);
+        if (calendarEvent) {
+            await dbRun('UPDATE reservations SET google_event_id = ? WHERE id = ?', [calendarEvent.id, newReservation.id]);
+            newReservation.google_event_id = calendarEvent.id;
+        }
         
         console.log(`✅ New reservation #${newReservation.id} created for ${guest_name}`);
         
