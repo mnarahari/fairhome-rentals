@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,47 +11,84 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-// Database file path
-const DB_FILE = path.join(__dirname, 'reservations.json');
+// Initialize SQLite Database
+const DB_FILE = path.join(__dirname, 'reservations.db');
+const db = new sqlite3.Database(DB_FILE);
 
-// Initialize database
-function initDB() {
-    if (!fs.existsSync(DB_FILE)) {
-        fs.writeFileSync(DB_FILE, JSON.stringify({ reservations: [], nextId: 1 }, null, 2));
-    }
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
-}
+// Create tables
+db.serialize(() => {
+    db.run(`
+        CREATE TABLE IF NOT EXISTS reservations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id INTEGER NOT NULL,
+            guest_name TEXT NOT NULL,
+            guest_email TEXT NOT NULL,
+            guest_phone TEXT,
+            check_in DATE NOT NULL,
+            check_out DATE NOT NULL,
+            adults INTEGER DEFAULT 1,
+            children INTEGER DEFAULT 0,
+            infants INTEGER DEFAULT 0,
+            pets INTEGER DEFAULT 0,
+            nightly_rate REAL NOT NULL,
+            cleaning_fee REAL DEFAULT 199,
+            service_fee REAL NOT NULL,
+            total_price REAL NOT NULL,
+            num_nights INTEGER NOT NULL,
+            special_requests TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    console.log('✅ SQLite database initialized');
+});
 
-function saveDB(data) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-}
+// Helper function to run queries with promises
+const dbAll = (sql, params = []) => {
+    return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+};
 
-// Initialize on startup
-let db = initDB();
-console.log('Database initialized successfully');
+const dbRun = (sql, params = []) => {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function(err) {
+            if (err) reject(err);
+            else resolve({ lastID: this.lastID, changes: this.changes });
+        });
+    });
+};
+
+const dbGet = (sql, params = []) => {
+    return new Promise((resolve, reject) => {
+        db.get(sql, params, (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+        });
+    });
+};
 
 // =============================================
 // API ROUTES
 // =============================================
 
 // Get all reservations
-app.get('/api/reservations', (req, res) => {
+app.get('/api/reservations', async (req, res) => {
     try {
-        db = initDB(); // Refresh from file
-        const sorted = [...db.reservations].sort((a, b) => 
-            new Date(b.created_at) - new Date(a.created_at)
-        );
-        res.json(sorted);
+        const reservations = await dbAll('SELECT * FROM reservations ORDER BY created_at DESC');
+        res.json(reservations);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
 // Get reservation by ID
-app.get('/api/reservations/:id', (req, res) => {
+app.get('/api/reservations/:id', async (req, res) => {
     try {
-        db = initDB();
-        const reservation = db.reservations.find(r => r.id === parseInt(req.params.id));
+        const reservation = await dbGet('SELECT * FROM reservations WHERE id = ?', [req.params.id]);
         if (reservation) {
             res.json(reservation);
         } else {
@@ -63,10 +100,8 @@ app.get('/api/reservations/:id', (req, res) => {
 });
 
 // Create new reservation
-app.post('/api/reservations', (req, res) => {
+app.post('/api/reservations', async (req, res) => {
     try {
-        db = initDB();
-        
         const {
             listing_id,
             guest_name,
@@ -94,18 +129,14 @@ app.post('/api/reservations', (req, res) => {
         }
 
         // Check for conflicting reservations
-        const checkInDate = new Date(check_in);
-        const checkOutDate = new Date(check_out);
-        
-        const conflicts = db.reservations.filter(r => {
-            if (r.listing_id !== (listing_id || 49599459) || r.status === 'cancelled') {
-                return false;
-            }
-            const rCheckIn = new Date(r.check_in);
-            const rCheckOut = new Date(r.check_out);
-            
-            return (checkInDate < rCheckOut && checkOutDate > rCheckIn);
-        });
+        const conflicts = await dbAll(`
+            SELECT * FROM reservations 
+            WHERE listing_id = ? 
+            AND status != 'cancelled'
+            AND ((check_in <= ? AND check_out > ?) 
+                OR (check_in < ? AND check_out >= ?) 
+                OR (check_in >= ? AND check_out <= ?))
+        `, [listing_id || 49599459, check_in, check_in, check_out, check_out, check_in, check_out]);
 
         if (conflicts.length > 0) {
             return res.status(409).json({ 
@@ -114,31 +145,34 @@ app.post('/api/reservations', (req, res) => {
             });
         }
 
-        // Create new reservation
-        const newReservation = {
-            id: db.nextId++,
-            listing_id: listing_id || 49599459,
+        // Insert new reservation
+        const result = await dbRun(`
+            INSERT INTO reservations (
+                listing_id, guest_name, guest_email, guest_phone,
+                check_in, check_out, adults, children, infants, pets,
+                nightly_rate, cleaning_fee, service_fee, total_price, num_nights,
+                special_requests
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            listing_id || 49599459,
             guest_name,
             guest_email,
-            guest_phone: guest_phone || null,
+            guest_phone || null,
             check_in,
             check_out,
-            adults: adults || 1,
-            children: children || 0,
-            infants: infants || 0,
-            pets: pets || 0,
+            adults || 1,
+            children || 0,
+            infants || 0,
+            pets || 0,
             nightly_rate,
-            cleaning_fee: cleaning_fee || 199,
+            cleaning_fee || 199,
             service_fee,
             total_price,
             num_nights,
-            special_requests: special_requests || null,
-            status: 'pending',
-            created_at: new Date().toISOString()
-        };
+            special_requests || null
+        ]);
 
-        db.reservations.push(newReservation);
-        saveDB(db);
+        const newReservation = await dbGet('SELECT * FROM reservations WHERE id = ?', [result.lastID]);
         
         console.log(`✅ New reservation #${newReservation.id} created for ${guest_name}`);
         
@@ -153,9 +187,8 @@ app.post('/api/reservations', (req, res) => {
 });
 
 // Update reservation status
-app.patch('/api/reservations/:id', (req, res) => {
+app.patch('/api/reservations/:id', async (req, res) => {
     try {
-        db = initDB();
         const { status } = req.body;
         const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
         
@@ -165,36 +198,27 @@ app.patch('/api/reservations/:id', (req, res) => {
             });
         }
 
-        const index = db.reservations.findIndex(r => r.id === parseInt(req.params.id));
-        
-        if (index === -1) {
+        const result = await dbRun('UPDATE reservations SET status = ? WHERE id = ?', [status, req.params.id]);
+
+        if (result.changes === 0) {
             return res.status(404).json({ error: 'Reservation not found' });
         }
 
-        db.reservations[index].status = status;
-        saveDB(db);
-
-        res.json({ 
-            message: 'Reservation updated', 
-            reservation: db.reservations[index] 
-        });
+        const updated = await dbGet('SELECT * FROM reservations WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Reservation updated', reservation: updated });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
 // Delete reservation
-app.delete('/api/reservations/:id', (req, res) => {
+app.delete('/api/reservations/:id', async (req, res) => {
     try {
-        db = initDB();
-        const index = db.reservations.findIndex(r => r.id === parseInt(req.params.id));
-        
-        if (index === -1) {
+        const result = await dbRun('DELETE FROM reservations WHERE id = ?', [req.params.id]);
+
+        if (result.changes === 0) {
             return res.status(404).json({ error: 'Reservation not found' });
         }
-
-        db.reservations.splice(index, 1);
-        saveDB(db);
 
         res.json({ message: 'Reservation deleted successfully' });
     } catch (error) {
@@ -203,13 +227,14 @@ app.delete('/api/reservations/:id', (req, res) => {
 });
 
 // Get booked dates for a listing (to block on calendar)
-app.get('/api/reservations/dates/:listing_id', (req, res) => {
+app.get('/api/reservations/dates/:listing_id', async (req, res) => {
     try {
-        db = initDB();
-        const bookedDates = db.reservations
-            .filter(r => r.listing_id === parseInt(req.params.listing_id) && r.status !== 'cancelled')
-            .map(r => ({ check_in: r.check_in, check_out: r.check_out }))
-            .sort((a, b) => new Date(a.check_in) - new Date(b.check_in));
+        const bookedDates = await dbAll(`
+            SELECT check_in, check_out 
+            FROM reservations 
+            WHERE listing_id = ? AND status != 'cancelled'
+            ORDER BY check_in
+        `, [req.params.listing_id]);
         
         res.json(bookedDates);
     } catch (error) {
@@ -231,7 +256,17 @@ app.listen(PORT, () => {
 ║                                                    ║
 ║   Website:  http://localhost:${PORT}                 ║
 ║   API:      http://localhost:${PORT}/api/reservations║
+║   Database: SQLite (reservations.db)               ║
 ║                                                    ║
 ╚════════════════════════════════════════════════════╝
     `);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    db.close((err) => {
+        if (err) console.error(err);
+        console.log('Database connection closed.');
+        process.exit(0);
+    });
 });

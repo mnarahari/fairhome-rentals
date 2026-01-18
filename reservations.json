@@ -41,7 +41,28 @@
       "special_requests": null,
       "status": "pending",
       "created_at": "2026-01-18T00:03:04.024Z"
+    },
+    {
+      "id": 3,
+      "listing_id": 49599459,
+      "guest_name": "Anu Narahari",
+      "guest_email": "anu.narahari@gmailcom",
+      "guest_phone": "5033323903",
+      "check_in": "2026-02-13",
+      "check_out": "2026-02-15",
+      "adults": 1,
+      "children": 0,
+      "infants": 0,
+      "pets": 0,
+      "nightly_rate": 350,
+      "cleaning_fee": 199,
+      "service_fee": 84,
+      "total_price": 983,
+      "num_nights": 2,
+      "special_requests": null,
+      "status": "pending",
+      "created_at": "2026-01-18T00:31:24.879Z"
     }
   ],
-  "nextId": 3
+  "nextId": 4
 }
