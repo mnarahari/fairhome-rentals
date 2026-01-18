@@ -4,7 +4,7 @@ const fs = require('fs');
 
 // Configuration - UPDATE THESE VALUES
 const CREDENTIALS_PATH = path.join(__dirname, 'google-credentials.json');
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'YOUR_CALENDAR_ID_HERE';
+const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'meg.dancedebut@gmail.com';
 
 let calendar = null;
 

@@ -541,6 +541,102 @@ function updatePriceBreakdown() {
 }
 
 // =============================================
+// STRIPE PAYMENT INTEGRATION
+// =============================================
+
+let stripe = null;
+let elements = null;
+let cardElement = null;
+
+// Initialize Stripe
+async function initializeStripe() {
+    try {
+        const response = await fetch('/api/stripe/config');
+        const { publishableKey } = await response.json();
+        
+        if (!publishableKey) {
+            console.warn('Stripe publishable key not configured');
+            return;
+        }
+        
+        stripe = Stripe(publishableKey);
+        elements = stripe.elements({
+            fonts: [
+                {
+                    cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap',
+                }
+            ]
+        });
+        
+        // Create card element with custom styling
+        const style = {
+            base: {
+                color: '#1E293B',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: '#94A3B8'
+                }
+            },
+            invalid: {
+                color: '#EF4444',
+                iconColor: '#EF4444'
+            }
+        };
+        
+        cardElement = elements.create('card', { 
+            style: style,
+            hidePostalCode: false
+        });
+        
+        console.log('✅ Stripe initialized successfully');
+    } catch (error) {
+        console.error('Error initializing Stripe:', error);
+    }
+}
+
+// Track if card element is mounted
+let cardMounted = false;
+
+// Mount card element when modal opens
+function mountCardElement() {
+    if (cardElement && !cardMounted) {
+        const cardContainer = document.getElementById('card-element');
+        if (cardContainer) {
+            // Clear any existing content
+            cardContainer.innerHTML = '';
+            
+            cardElement.mount('#card-element');
+            cardMounted = true;
+            
+            // Handle real-time validation errors
+            cardElement.on('change', (event) => {
+                const displayError = document.getElementById('card-errors');
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                    displayError.style.display = 'block';
+                } else {
+                    displayError.textContent = '';
+                    displayError.style.display = 'none';
+                }
+            });
+            
+            console.log('✅ Card element mounted');
+        }
+    }
+}
+
+// Unmount card element when modal closes
+function unmountCardElement() {
+    if (cardElement && cardMounted) {
+        cardElement.unmount();
+        cardMounted = false;
+        console.log('Card element unmounted');
+    }
+}
+
+// =============================================
 // RESERVATION MODAL FUNCTIONALITY
 // =============================================
 
@@ -574,19 +670,29 @@ function openReservationModal() {
             <span>Service fee</span>
             <span>$${calculatedPrices.serviceFee.toLocaleString()}</span>
         </div>
-        <div class="summary-row">
+        <div class="summary-row total-row">
             <span>Total</span>
             <span>$${calculatedPrices.total.toLocaleString()}</span>
         </div>
     `;
     
+    // Update payment amount on button
+    document.getElementById('paymentAmount').textContent = calculatedPrices.total.toLocaleString();
+    
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+    
+    // Mount Stripe card element
+    setTimeout(() => {
+        mountCardElement();
+    }, 100);
 }
 
 function closeReservationModal() {
     document.getElementById('reservationModal').classList.remove('active');
     document.body.style.overflow = '';
+    // Unmount card element when closing modal
+    unmountCardElement();
 }
 
 function showConfirmation(reservation) {
@@ -600,7 +706,8 @@ function showConfirmation(reservation) {
         <p><strong>Check-in:</strong> ${formatDisplayDate(new Date(reservation.check_in))}</p>
         <p><strong>Checkout:</strong> ${formatDisplayDate(new Date(reservation.check_out))}</p>
         <p><strong>Guests:</strong> ${reservation.adults + reservation.children} guests</p>
-        <p><strong>Total:</strong> $${reservation.total_price.toLocaleString()}</p>
+        <p><strong>Total Paid:</strong> $${reservation.total_price.toLocaleString()}</p>
+        <p><strong>Status:</strong> <span class="status-confirmed">Confirmed</span></p>
     `;
     
     modal.classList.add('active');
@@ -611,8 +718,16 @@ async function submitReservation(e) {
     e.preventDefault();
     
     const submitBtn = document.getElementById('submitReservation');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
+    const cardErrors = document.getElementById('card-errors');
+    
+    // Show loading state
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Processing...';
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'flex';
+    cardErrors.textContent = '';
+    cardErrors.style.display = 'none';
     
     const reservationData = {
         listing_id: currentListing.id,
@@ -634,41 +749,106 @@ async function submitReservation(e) {
     };
     
     try {
-        const response = await fetch('/api/reservations', {
+        // Step 1: Create PaymentIntent on the server
+        const intentResponse = await fetch('/api/create-payment-intent', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(reservationData)
+            body: JSON.stringify({
+                amount: calculatedPrices.total,
+                currency: 'usd',
+                metadata: {
+                    listing_id: currentListing.id,
+                    guest_email: reservationData.guest_email,
+                    check_in: reservationData.check_in,
+                    check_out: reservationData.check_out
+                }
+            })
         });
         
-        const data = await response.json();
+        const { clientSecret, paymentIntentId } = await intentResponse.json();
         
-        if (response.ok) {
-            showConfirmation(data.reservation);
-            document.getElementById('reservationForm').reset();
+        if (!clientSecret) {
+            throw new Error('Failed to create payment intent');
+        }
+        
+        // Step 2: Confirm the payment with Stripe
+        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+                card: cardElement,
+                billing_details: {
+                    name: reservationData.guest_name,
+                    email: reservationData.guest_email,
+                    phone: reservationData.guest_phone || undefined
+                }
+            }
+        });
+        
+        if (error) {
+            // Payment failed - show error to user
+            cardErrors.textContent = error.message;
+            cardErrors.style.display = 'block';
+            throw new Error(error.message);
+        }
+        
+        if (paymentIntent.status === 'succeeded') {
+            // Step 3: Create reservation with payment confirmation
+            const response = await fetch('/api/reservations/with-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...reservationData,
+                    payment_intent_id: paymentIntentId
+                })
+            });
             
-            // Reset dates
-            checkInDate = null;
-            checkOutDate = null;
-            document.getElementById('checkinDate').value = '';
-            document.getElementById('checkoutDate').value = '';
-            updatePriceBreakdown();
-            renderCalendar();
-        } else {
-            alert(data.error || 'Failed to create reservation. Please try again.');
+            const data = await response.json();
+            
+            if (response.ok) {
+                showConfirmation(data.reservation);
+                document.getElementById('reservationForm').reset();
+                
+                // Clear card element
+                if (cardElement) {
+                    cardElement.clear();
+                }
+                
+                // Reset dates
+                checkInDate = null;
+                checkOutDate = null;
+                document.getElementById('checkinDate').value = '';
+                document.getElementById('checkoutDate').value = '';
+                updatePriceBreakdown();
+                
+                // Refresh booked dates
+                fetchBookedDates(currentListing.id);
+            } else {
+                cardErrors.textContent = data.error || 'Failed to create reservation.';
+                cardErrors.style.display = 'block';
+            }
         }
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to connect to server. Please try again.');
+        console.error('Payment Error:', error);
+        if (!cardErrors.textContent) {
+            cardErrors.textContent = 'Payment failed. Please try again.';
+            cardErrors.style.display = 'block';
+        }
     } finally {
+        // Reset button state
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Confirm Reservation';
+        btnText.style.display = 'inline';
+        btnLoading.style.display = 'none';
     }
 }
 
 // Setup modal event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Stripe
+    initializeStripe();
+    
     // Close modal buttons
     document.getElementById('closeModal')?.addEventListener('click', closeReservationModal);
     document.getElementById('closeConfirmation')?.addEventListener('click', () => {

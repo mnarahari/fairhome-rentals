@@ -1,8 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const { initGoogleCalendar, addReservationToCalendar, updateCalendarEvent, deleteCalendarEvent } = require('./googleCalendar');
+
+// Initialize Stripe
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,10 +45,25 @@ db.serialize(() => {
             num_nights INTEGER NOT NULL,
             special_requests TEXT,
             status TEXT DEFAULT 'pending',
+            payment_status TEXT DEFAULT 'pending',
+            payment_intent_id TEXT,
+            payment_method TEXT,
             google_event_id TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+    
+    // Add payment columns if they don't exist (for existing databases)
+    db.run(`ALTER TABLE reservations ADD COLUMN payment_status TEXT DEFAULT 'pending'`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.error(err);
+    });
+    db.run(`ALTER TABLE reservations ADD COLUMN payment_intent_id TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.error(err);
+    });
+    db.run(`ALTER TABLE reservations ADD COLUMN payment_method TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.error(err);
+    });
+    
     console.log('✅ SQLite database initialized');
 });
 
@@ -250,6 +269,219 @@ app.get('/api/reservations/dates/:listing_id', async (req, res) => {
         
         res.json(bookedDates);
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// =============================================
+// STRIPE PAYMENT ROUTES
+// =============================================
+
+// Get Stripe publishable key (for frontend)
+app.get('/api/stripe/config', (req, res) => {
+    res.json({ 
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY 
+    });
+});
+
+// Create Payment Intent
+app.post('/api/create-payment-intent', async (req, res) => {
+    try {
+        const { 
+            amount, 
+            currency = 'usd',
+            metadata = {}
+        } = req.body;
+
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ error: 'Invalid amount' });
+        }
+
+        // Create a PaymentIntent with the order amount and currency
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(amount * 100), // Stripe expects cents
+            currency: currency,
+            automatic_payment_methods: {
+                enabled: true,
+            },
+            metadata: {
+                ...metadata,
+                integration: 'cloud-nine-vacation-rental'
+            }
+        });
+
+        res.json({
+            clientSecret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id
+        });
+    } catch (error) {
+        console.error('Error creating payment intent:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create reservation with payment
+app.post('/api/reservations/with-payment', async (req, res) => {
+    try {
+        const {
+            payment_intent_id,
+            listing_id,
+            guest_name,
+            guest_email,
+            guest_phone,
+            check_in,
+            check_out,
+            adults,
+            children,
+            infants,
+            pets,
+            nightly_rate,
+            cleaning_fee,
+            service_fee,
+            total_price,
+            num_nights,
+            special_requests
+        } = req.body;
+
+        // Validate required fields
+        if (!guest_name || !guest_email || !check_in || !check_out || !payment_intent_id) {
+            return res.status(400).json({ 
+                error: 'Missing required fields' 
+            });
+        }
+
+        // Verify the payment was successful with Stripe
+        const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
+        
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(400).json({ 
+                error: 'Payment not completed',
+                payment_status: paymentIntent.status
+            });
+        }
+
+        // Check for conflicting reservations
+        const conflicts = await dbAll(`
+            SELECT * FROM reservations 
+            WHERE listing_id = ? 
+            AND status != 'cancelled'
+            AND ((check_in <= ? AND check_out > ?) 
+                OR (check_in < ? AND check_out >= ?) 
+                OR (check_in >= ? AND check_out <= ?))
+        `, [listing_id || 49599459, check_in, check_in, check_out, check_out, check_in, check_out]);
+
+        if (conflicts.length > 0) {
+            // Refund the payment if dates are no longer available
+            await stripe.refunds.create({
+                payment_intent: payment_intent_id,
+                reason: 'requested_by_customer'
+            });
+            
+            return res.status(409).json({ 
+                error: 'These dates are already booked. Your payment has been refunded.',
+                conflicts 
+            });
+        }
+
+        // Get payment method details
+        let paymentMethodType = 'card';
+        if (paymentIntent.payment_method) {
+            const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntent.payment_method);
+            paymentMethodType = paymentMethod.type;
+        }
+
+        // Insert new reservation with payment info
+        const result = await dbRun(`
+            INSERT INTO reservations (
+                listing_id, guest_name, guest_email, guest_phone,
+                check_in, check_out, adults, children, infants, pets,
+                nightly_rate, cleaning_fee, service_fee, total_price, num_nights,
+                special_requests, status, payment_status, payment_intent_id, payment_method
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            listing_id || 49599459,
+            guest_name,
+            guest_email,
+            guest_phone || null,
+            check_in,
+            check_out,
+            adults || 1,
+            children || 0,
+            infants || 0,
+            pets || 0,
+            nightly_rate,
+            cleaning_fee || 199,
+            service_fee,
+            total_price,
+            num_nights,
+            special_requests || null,
+            'confirmed', // Auto-confirm paid reservations
+            'paid',
+            payment_intent_id,
+            paymentMethodType
+        ]);
+
+        let newReservation = await dbGet('SELECT * FROM reservations WHERE id = ?', [result.lastID]);
+        
+        // Add to Google Calendar
+        const calendarEvent = await addReservationToCalendar(newReservation);
+        if (calendarEvent) {
+            await dbRun('UPDATE reservations SET google_event_id = ? WHERE id = ?', [calendarEvent.id, newReservation.id]);
+            newReservation.google_event_id = calendarEvent.id;
+        }
+        
+        console.log(`✅ Paid reservation #${newReservation.id} created for ${guest_name} - $${total_price}`);
+        
+        res.status(201).json({
+            message: 'Reservation created successfully',
+            reservation: newReservation
+        });
+    } catch (error) {
+        console.error('Error creating reservation:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Refund a reservation
+app.post('/api/reservations/:id/refund', async (req, res) => {
+    try {
+        const reservation = await dbGet('SELECT * FROM reservations WHERE id = ?', [req.params.id]);
+        
+        if (!reservation) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+
+        if (!reservation.payment_intent_id) {
+            return res.status(400).json({ error: 'No payment found for this reservation' });
+        }
+
+        if (reservation.payment_status === 'refunded') {
+            return res.status(400).json({ error: 'This reservation has already been refunded' });
+        }
+
+        // Create refund in Stripe
+        const refund = await stripe.refunds.create({
+            payment_intent: reservation.payment_intent_id,
+            reason: 'requested_by_customer'
+        });
+
+        // Update reservation status
+        await dbRun(
+            'UPDATE reservations SET status = ?, payment_status = ? WHERE id = ?',
+            ['cancelled', 'refunded', req.params.id]
+        );
+
+        const updated = await dbGet('SELECT * FROM reservations WHERE id = ?', [req.params.id]);
+        
+        console.log(`💸 Reservation #${req.params.id} refunded - $${reservation.total_price}`);
+        
+        res.json({ 
+            message: 'Reservation refunded successfully',
+            refund_id: refund.id,
+            reservation: updated
+        });
+    } catch (error) {
+        console.error('Error refunding reservation:', error);
         res.status(500).json({ error: error.message });
     }
 });

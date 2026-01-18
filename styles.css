@@ -1959,3 +1959,213 @@ body {
     }
 }
 
+/* =============================================
+   STRIPE PAYMENT STYLES
+   ============================================= */
+
+.payment-section {
+    background: linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 100%);
+    border: 1px solid #BBF7D0;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 24px 0;
+}
+
+.payment-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.payment-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.payment-icon {
+    font-size: 20px;
+}
+
+/* Stripe Card Element Container */
+.stripe-card-element {
+    background: white;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-height: 44px;
+}
+
+.stripe-card-element:hover {
+    border-color: #94A3B8;
+}
+
+.stripe-card-element.StripeElement--focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.stripe-card-element.StripeElement--invalid {
+    border-color: #EF4444;
+}
+
+/* Ensure Stripe iframe is interactive */
+.stripe-card-element iframe {
+    pointer-events: auto !important;
+}
+
+#card-element {
+    position: relative;
+    z-index: 1;
+}
+
+/* Card Errors */
+.card-errors {
+    display: none;
+    color: #EF4444;
+    font-size: 13px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #FEF2F2;
+    border-radius: 6px;
+    border-left: 3px solid #EF4444;
+}
+
+/* Payment Security Note */
+.payment-security-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #059669;
+}
+
+.payment-security-note svg {
+    flex-shrink: 0;
+}
+
+/* Payment Button */
+.payment-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.payment-btn .btn-text {
+    display: inline-flex;
+    align-items: center;
+}
+
+.payment-btn .btn-loading {
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Spinner Animation */
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Summary Total Row */
+.summary-row.total-row {
+    padding-top: 12px;
+    border-top: 2px solid var(--border-color);
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+.summary-row.total-row span:last-child {
+    color: var(--primary-color);
+}
+
+/* Confirmation Modal Updates */
+.confirmation-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.payment-confirmed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #D1FAE5;
+    color: #065F46;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 16px 0;
+}
+
+.payment-confirmed-badge svg {
+    flex-shrink: 0;
+}
+
+/* Status Confirmed in Details */
+.status-confirmed {
+    display: inline-block;
+    background: #D1FAE5;
+    color: #065F46;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Payment Status Badges for Admin */
+.payment-status-paid {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.payment-status-pending {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.payment-status-refunded {
+    background: #E0E7FF;
+    color: #3730A3;
+}
+
+.payment-status-failed {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+/* Responsive Payment Styles */
+@media (max-width: 480px) {
+    .payment-section {
+        padding: 16px;
+        margin: 16px 0;
+    }
+    
+    .payment-header h3 {
+        font-size: 15px;
+    }
+    
+    .stripe-card-element {
+        padding: 12px;
+    }
+}
+

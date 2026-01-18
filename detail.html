@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
     <!-- Header -->
@@ -316,8 +318,35 @@
                     <label for="specialRequests">Special Requests</label>
                     <textarea id="specialRequests" name="specialRequests" rows="3" placeholder="Any special requests or notes for your stay..."></textarea>
                 </div>
-                <button type="submit" class="submit-btn" id="submitReservation">
-                    Confirm Reservation
+                
+                <!-- Payment Section -->
+                <div class="payment-section">
+                    <div class="payment-header">
+                        <span class="payment-icon">🔒</span>
+                        <h3>Payment Details</h3>
+                    </div>
+                    <div class="form-group">
+                        <label for="card-element">Credit or Debit Card *</label>
+                        <div id="card-element" class="stripe-card-element">
+                            <!-- Stripe Card Element will be inserted here -->
+                        </div>
+                        <div id="card-errors" class="card-errors" role="alert"></div>
+                    </div>
+                    <div class="payment-security-note">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#10B981" stroke-width="2"/>
+                            <path d="M8 12L11 15L16 9" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span>Your payment is secured by Stripe. We never store your card details.</span>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn payment-btn" id="submitReservation">
+                    <span class="btn-text">Pay $<span id="paymentAmount">0</span></span>
+                    <span class="btn-loading" style="display: none;">
+                        <span class="spinner"></span>
+                        Processing...
+                    </span>
                 </button>
             </form>
         </div>
@@ -327,10 +356,17 @@
     <div class="modal-overlay" id="confirmationModal">
         <div class="modal-content confirmation">
             <div class="confirmation-icon">✓</div>
-            <h2>Reservation Confirmed!</h2>
+            <h2>Payment Successful!</h2>
+            <p class="confirmation-subtitle">Your reservation is confirmed</p>
             <p class="confirmation-id">Confirmation #<span id="confirmationId"></span></p>
             <div class="confirmation-details" id="confirmationDetails">
                 <!-- Will be populated by JS -->
+            </div>
+            <div class="payment-confirmed-badge">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Payment confirmed via Stripe</span>
             </div>
             <p class="confirmation-note">A confirmation email will be sent to your email address.</p>
             <button class="submit-btn" id="closeConfirmation">Done</button>
