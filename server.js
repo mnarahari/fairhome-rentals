@@ -7,9 +7,15 @@ const { initGoogleCalendar, addReservationToCalendar, updateCalendarEvent, delet
 
 // Initialize Stripe (optional - only if keys are configured)
 let stripe = null;
-if (process.env.STRIPE_SECRET_KEY) {
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    console.log('✅ Stripe initialized');
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (stripeSecretKey && stripeSecretKey.trim() && stripeSecretKey.startsWith('sk_')) {
+    try {
+        stripe = require('stripe')(stripeSecretKey);
+        console.log('✅ Stripe initialized');
+    } catch (error) {
+        console.log('⚠️  Stripe: Failed to initialize. Payment processing disabled.');
+        stripe = null;
+    }
 } else {
     console.log('⚠️  Stripe: Secret key not configured. Payment processing disabled.');
 }

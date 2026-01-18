@@ -552,10 +552,16 @@ let cardElement = null;
 async function initializeStripe() {
     try {
         const response = await fetch('/api/stripe/config');
-        const { publishableKey } = await response.json();
         
-        if (!publishableKey) {
-            console.warn('Stripe publishable key not configured');
+        if (!response.ok) {
+            console.log('Stripe not configured - payment processing disabled');
+            return;
+        }
+        
+        const { publishableKey, error } = await response.json();
+        
+        if (error || !publishableKey) {
+            console.log('Stripe not configured - payment processing disabled');
             return;
         }
         
