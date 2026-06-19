@@ -1,0 +1,21 @@
+{
+  "defaults": {
+    "siteBaseUrl": "https://www.montourdumontblanc.com",
+    "method": "search",
+    "comfort": "ALL",
+    "hikers": 2
+  },
+  "notification": {
+    "to": "mnarahari@gmail.com",
+    "renotifyAfterHours": 24
+  },
+  "checks": [
+    {
+      "id": "edelweiss-la-fouly-2026-08-07",
+      "date": "2026-08-07",
+      "location": "La Fouly",
+      "hotelName": "Edelweiss",
+      "refugeSlug": "hotel-edelweiss"
+    }
+  ]
+}

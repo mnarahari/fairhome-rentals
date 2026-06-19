@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Scheduled Tour du Mont Blanc refuge availability checker.
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Default: mnarahari@gmail.com
+    Description: Email address that receives availability notifications.
+  NotificationFromEmail:
+    Type: String
+    Default: mnarahari@gmail.com
+    Description: SES-verified sender address for availability notifications.
+  ScheduleExpression:
+    Type: String
+    Default: rate(1 hour)
+    Description: EventBridge schedule expression for the checker.
+  RenotifyAfterHours:
+    Type: Number
+    Default: 24
+    Description: Re-send notifications after this many hours while availability remains present.
+
+Resources:
+  TmbAvailabilityStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: checkId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: checkId
+          KeyType: HASH
+
+  TmbAvailabilityCheckerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs20.x
+      Handler: tmb/lambda.handler
+      CodeUri: .
+      Timeout: 120
+      MemorySize: 512
+      Environment:
+        Variables:
+          TMB_CHECK_CONFIG_PATH: tmb/checks.json
+          TMB_STATE_TABLE_NAME: !Ref TmbAvailabilityStateTable
+          NOTIFICATION_EMAIL: !Ref NotificationEmail
+          NOTIFICATION_FROM_EMAIL: !Ref NotificationFromEmail
+          RENOTIFY_AFTER_HOURS: !Ref RenotifyAfterHours
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TmbAvailabilityStateTable
+        - Statement:
+            Effect: Allow
+            Action:
+              - ses:SendEmail
+              - ses:SendRawEmail
+            Resource: '*'
+      Events:
+        ScheduledCheck:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref ScheduleExpression
+            Enabled: true
+
+Outputs:
+  TmbAvailabilityCheckerFunctionName:
+    Description: Lambda function name.
+    Value: !Ref TmbAvailabilityCheckerFunction
+  TmbAvailabilityStateTableName:
+    Description: DynamoDB table storing per-check notification state.
+    Value: !Ref TmbAvailabilityStateTable

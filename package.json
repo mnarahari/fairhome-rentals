@@ -8,10 +8,17 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test",
+    "tmb:check": "node tmb/run.js",
+    "tmb:check:dry-run-email": "node tmb/run.js --dry-run"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1072.0",
+    "@aws-sdk/client-ses": "^3.1072.0",
+    "@aws-sdk/lib-dynamodb": "^3.1072.0",
     "bcryptjs": "^3.0.3",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
