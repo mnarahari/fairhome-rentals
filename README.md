@@ -186,6 +186,9 @@ Before enabling real email delivery, verify the `NotificationFromEmail` sender i
 Amazon SES. If your AWS account is still in the SES sandbox, also verify
 `mnarahari@gmail.com` as a recipient or request SES production access.
 
+For the full AWS runbook, including one-time invocation and log checks, see
+[`docs/tmb-aws-deployment.md`](docs/tmb-aws-deployment.md).
+
 ---
 
 **Current Status**: ✅ Phase 1 Complete - Static Listing Site
