@@ -35,7 +35,7 @@ Resources:
   TmbAvailabilityCheckerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       Handler: tmb/lambda.handler
       CodeUri: .
       Timeout: 120
