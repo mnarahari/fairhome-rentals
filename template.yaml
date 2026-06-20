@@ -5,7 +5,7 @@ Description: Scheduled Tour du Mont Blanc refuge availability checker.
 Parameters:
   NotificationEmail:
     Type: String
-    Default: mnarahari@gmail.com
+    Default: mnarahari@gmail.com,anu.narahari@gmail.com
     Description: Email address that receives availability notifications.
   NotificationFromEmail:
     Type: String

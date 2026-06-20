@@ -2,8 +2,7 @@
 
 This guide deploys the Tour du Mont Blanc refuge availability checker as a
 scheduled AWS Lambda job. The job checks every row in `tmb/checks.json`, sends an
-email when a configured hotel/date becomes available, and records notification
-state in DynamoDB so repeat runs do not spam the recipient.
+email summary every time it runs, and records per-check state in DynamoDB.
 
 ## What AWS resources are created
 
@@ -38,12 +37,14 @@ The stack uses Amazon SES to send availability emails.
 2. Verify the sender email address. By default this is
    `mnarahari@gmail.com`, controlled by the `NotificationFromEmail` parameter.
 3. If the AWS account is still in the SES sandbox, also verify the recipient
-   email address, `mnarahari@gmail.com`, or request SES production access.
+   email addresses, `mnarahari@gmail.com` and `anu.narahari@gmail.com`, or
+   request SES production access.
 
 You can verify an email address from the CLI:
 
 ```bash
 aws ses verify-email-identity --email-address mnarahari@gmail.com
+aws ses verify-email-identity --email-address anu.narahari@gmail.com
 ```
 
 After running that command, open the verification email and click the AWS link.
@@ -99,6 +100,8 @@ Suggested guided values:
 - Stack Name: `tmb-availability-checker`
 - AWS Region: your SES-configured region, for example `us-east-1`
 - Parameter `NotificationEmail`: `mnarahari@gmail.com`
+- To send to both configured recipients, use
+  `mnarahari@gmail.com,anu.narahari@gmail.com`
 - Parameter `NotificationFromEmail`: `mnarahari@gmail.com`
 - Parameter `ScheduleExpression`: `rate(1 hour)`
 - Parameter `RenotifyAfterHours`: `24`
@@ -147,6 +150,9 @@ The response JSON includes:
 - `notificationsSent`: number of emails sent
 - `results`: per-check details and booking URLs when available
 
+The email subject is `No availability` when no configured checks are bookable.
+It is `Availability found - act on it ASAP` when at least one check is bookable.
+
 ## Check logs
 
 ```bash
@@ -185,8 +191,8 @@ check's `id`, AWS will treat it as a new check for notification deduplication.
 - If in SES sandbox, confirm recipient verification.
 - Check Lambda logs for `ses:SendEmail` errors.
 - Confirm `notificationsSent` is greater than `0` in the Lambda response.
-- Remember: emails are only sent when availability is found and the check was
-  not already notified within `RenotifyAfterHours`.
+- The current job sends one summary email on every run so you know the schedule
+  is still active.
 
 ### Lambda reports unavailable when the site looks available
 

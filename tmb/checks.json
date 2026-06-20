@@ -6,7 +6,10 @@
     "hikers": 2
   },
   "notification": {
-    "to": "mnarahari@gmail.com",
+    "to": [
+      "mnarahari@gmail.com",
+      "anu.narahari@gmail.com"
+    ],
     "renotifyAfterHours": 24
   },
   "checks": [

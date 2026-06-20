@@ -1,7 +1,7 @@
 const path = require('path');
 const { loadConfig, runAvailabilityChecks } = require('./availabilityChecker');
 const { ConsoleNotifier, SesEmailNotifier } = require('./notifier');
-const { DynamoDbStateStore, MemoryStateStore, nextStateForResult, shouldNotify } = require('./state');
+const { DynamoDbStateStore, MemoryStateStore, nextStateForResult } = require('./state');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, 'checks.json');
 
@@ -18,22 +18,14 @@ async function handler() {
         : new SesEmailNotifier({ sourceEmail: process.env.NOTIFICATION_FROM_EMAIL || process.env.NOTIFICATION_EMAIL });
 
     const results = await runAvailabilityChecks(config);
-    const notifications = [];
+    await notifier.sendSummary(results, config);
 
     for (const result of results) {
         const previousState = await stateStore.get(result.checkId);
-        const notify = shouldNotify(result, previousState, {
-            renotifyAfterHours: config.notification?.renotifyAfterHours
-        });
-
-        if (notify) {
-            await notifier.send(result, config);
-            notifications.push(result.checkId);
-        }
 
         await stateStore.put(
             result.checkId,
-            nextStateForResult(result, notify, previousState || {})
+            nextStateForResult(result, true, previousState || {})
         );
     }
 
@@ -42,8 +34,10 @@ async function handler() {
         body: JSON.stringify({
             checked: results.length,
             available: results.filter((result) => result.available).length,
-            notificationsSent: notifications.length,
-            notificationCheckIds: notifications,
+            notificationsSent: 1,
+            notificationSubject: results.some((result) => result.available)
+                ? 'Availability found - act on it ASAP'
+                : 'No availability',
             results
         })
     };

@@ -122,6 +122,9 @@ This is a learning project for educational purposes.
 
 This repo also includes a scheduled Node.js job for checking refuge availability on
 `https://www.montourdumontblanc.com/en/`.
+Each scheduled run sends one summary email: `No availability` when nothing is
+bookable, or `Availability found - act on it ASAP` when at least one configured
+check has a booking link.
 
 ### Configure checks
 
@@ -184,7 +187,8 @@ sam deploy --guided
 
 Before enabling real email delivery, verify the `NotificationFromEmail` sender in
 Amazon SES. If your AWS account is still in the SES sandbox, also verify
-`mnarahari@gmail.com` as a recipient or request SES production access.
+`mnarahari@gmail.com` and `anu.narahari@gmail.com` as recipients or request SES
+production access.
 
 For the full AWS runbook, including one-time invocation and log checks, see
 [`docs/tmb-aws-deployment.md`](docs/tmb-aws-deployment.md).
