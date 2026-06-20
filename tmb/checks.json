@@ -1,0 +1,38 @@
+{
+  "defaults": {
+    "siteBaseUrl": "https://www.montourdumontblanc.com",
+    "method": "search",
+    "comfort": "ALL",
+    "hikers": 2
+  },
+  "notification": {
+    "to": [
+      "mnarahari@gmail.com",
+      "anu.narahari@gmail.com"
+    ],
+    "renotifyAfterHours": 24
+  },
+  "checks": [
+    {
+      "id": "edelweiss-la-fouly-2026-08-07",
+      "date": "2026-08-07",
+      "location": "La Fouly",
+      "hotelName": "Edelweiss",
+      "refugeSlug": "hotel-edelweiss"
+    },
+    {
+      "id": "les-chambres-du-soleil-les-chapieux-les-mottets-2026-08-03",
+      "date": "2026-08-03",
+      "location": "Les Chapieux / Les Mottets",
+      "hotelName": "Les Chambres du Soleil",
+      "refugeSlug": "les-chambres-du-soleil"
+    },
+    {
+      "id": "auberge-refuge-de-la-nova-les-chapieux-les-mottets-2026-08-03",
+      "date": "2026-08-03",
+      "location": "Les Chapieux / Les Mottets",
+      "hotelName": "Auberge-Refuge de la Nova",
+      "refugeSlug": "auberge-refuge-de-la-nova"
+    }
+  ]
+}

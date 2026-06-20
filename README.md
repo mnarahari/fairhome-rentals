@@ -118,6 +118,81 @@ Page Background: #F7F7F7
 
 This is a learning project for educational purposes.
 
+## 🥾 Tour du Mont Blanc refuge availability checker
+
+This repo also includes a scheduled Node.js job for checking refuge availability on
+`https://www.montourdumontblanc.com/en/`.
+Each scheduled run sends one summary email: `No availability` when nothing is
+bookable, or `Availability found - act on it ASAP` when at least one configured
+check has a booking link.
+
+### Configure checks
+
+Edit `tmb/checks.json`. The `checks` array can contain any number of
+date/location/hotel combinations:
+
+```json
+{
+  "checks": [
+    {
+      "id": "edelweiss-la-fouly-2026-08-07",
+      "date": "2026-08-07",
+      "location": "La Fouly",
+      "hotelName": "Edelweiss",
+      "refugeSlug": "hotel-edelweiss"
+    },
+    {
+      "id": "auberge-mont-blanc-trient-2026-08-08",
+      "date": "2026-08-08",
+      "location": "Trient",
+      "hotelName": "Auberge Mont-Blanc",
+      "refugeSlug": "auberge-mont-blanc"
+    }
+  ]
+}
+```
+
+Each scheduled run checks every configured row. The primary availability signal is
+the presence of a `Book` link/button on the matching hotel card in the TMB search
+results. If `refugeSlug` or `refugeUrl` is present and the hotel card cannot be
+matched, the checker falls back to the refuge calendar page.
+
+### Run locally
+
+```bash
+npm run tmb:check
+```
+
+To print email notifications that would be sent:
+
+```bash
+npm run tmb:check:dry-run-email
+```
+
+### Deploy to AWS
+
+The AWS deployment uses:
+
+- AWS Lambda for the checker
+- EventBridge Schedule for periodic execution
+- DynamoDB for per-check notification deduplication
+- Amazon SES for email
+
+Deploy with AWS SAM:
+
+```bash
+sam build
+sam deploy --guided
+```
+
+Before enabling real email delivery, verify the `NotificationFromEmail` sender in
+Amazon SES. If your AWS account is still in the SES sandbox, also verify
+`mnarahari@gmail.com` and `anu.narahari@gmail.com` as recipients or request SES
+production access.
+
+For the full AWS runbook, including one-time invocation and log checks, see
+[`docs/tmb-aws-deployment.md`](docs/tmb-aws-deployment.md).
+
 ---
 
 **Current Status**: ✅ Phase 1 Complete - Static Listing Site
