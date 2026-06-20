@@ -103,7 +103,7 @@ Suggested guided values:
 - To send to both configured recipients, use
   `mnarahari@gmail.com,anu.narahari@gmail.com`
 - Parameter `NotificationFromEmail`: `mnarahari@gmail.com`
-- Parameter `ScheduleExpression`: `rate(1 hour)`
+- Parameter `ScheduleExpression`: `rate(30 minutes)`
 - Parameter `RenotifyAfterHours`: `24`
 - Confirm changes before deploy: `Y`
 - Allow SAM CLI IAM role creation: `Y`

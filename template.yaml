@@ -13,7 +13,7 @@ Parameters:
     Description: SES-verified sender address for availability notifications.
   ScheduleExpression:
     Type: String
-    Default: rate(1 hour)
+    Default: rate(30 minutes)
     Description: EventBridge schedule expression for the checker.
   RenotifyAfterHours:
     Type: Number
